@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/size_extension.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:library_app/components/constant.dart';
 import 'package:library_app/components/global_componnets.dart';
 import 'package:library_app/dummy_data/pdf_files_datd.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/result_model.dart';
+import '../next_screen.dart';
 
 class PdfItem extends StatefulWidget {
 
@@ -39,11 +42,67 @@ class _PdfItemState extends State<PdfItem> {
 
 
 
+  int counter=0;
+
+ final _prefs = SharedPreferences.getInstance();
+  DateTime initDate;
+  var resultDate;
+  @override
+  void initState() {
+
+    // TODO: implement initState
+    super.initState();
+
+
+  }
 
 
 
   @override
   Widget build(BuildContext context) {
+    void _viewFile2() async {
+      final SharedPreferences prefs = await _prefs;
+      var secoundDate=DateTime.parse( prefs.getString('date'));
+      resultDate = DateTime.now().difference(secoundDate).inSeconds.toInt();
+
+      print('      هدااااااااا الوقت بالدقائق  $resultDate');
+
+      if(counter<3){
+        print('conter$counter');
+        final _url =
+            'http://www.africau.edu/images/default/sample.pdf';
+        if (await canLaunch(_url)) {
+          await launch(_url);
+        } else {
+          print('Something went wrong');
+        }
+        if(resultDate>30)
+          setState(() {
+            counter=counter+1;
+          });
+        print(' $counter هداااااااااااااااا الكونتر ');
+
+      }
+      else {
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  NextScreen()),
+        ).then((value)async {
+          await  prefs.setString('date', DateTime.now().toIso8601String());
+          print('تم التخزيييييييييييييييييييين');
+          var now=DateTime.parse( prefs.getString('date'));
+          String formattedTime = DateFormat.Hm().format(now);
+          counter=0;
+          resultDate=0;
+          print(now);
+
+
+        });
+      }
+
+    }
+
     return Column(
       children: [
 
@@ -163,7 +222,7 @@ class _PdfItemState extends State<PdfItem> {
                                     ),
 
                                     TextButton(
-                                      onPressed: _viewFile,
+                                      onPressed:()=> _viewFile2,
                                       child:  Text(
                                         "تنزيل",
                                         style:  GoogleFonts.cairo(

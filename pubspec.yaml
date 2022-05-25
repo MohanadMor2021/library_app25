@@ -53,6 +53,7 @@ dependencies:
   pull_to_refresh:
   delayed_display:
 
+  intl:
 
 dev_dependencies:
   flutter_test:
