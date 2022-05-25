@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/size_extension.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:library_app/components/constant.dart';
 import 'package:library_app/components/global_componnets.dart';
@@ -9,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../ads/cubit/ad_helper.dart';
 import '../models/result_model.dart';
 import '../next_screen.dart';
 
@@ -52,18 +56,90 @@ class _PdfItemState extends State<PdfItem> {
 
     // TODO: implement initState
     super.initState();
+    loadAd();
 
 
   }
 
 
 
+
+
+
+
+  static bool adShowed = false;
+
+  static RewardedAd _rewardedAd;
+
+  static bool _isAdReady = false;
+
+  static void loadAd(){
+    adShowed =false;
+
+    RewardedAd.load(
+      adUnitId: AdHelper.rewardedAdUnitId,
+      request:  const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad){
+          _rewardedAd = ad;
+          _isAdReady = true;
+        },
+        onAdFailedToLoad: (error){
+          log("failed to load rewarded ad: ${error.message}");
+        },
+      ),
+    );
+  }
+
+
+  static Future <void> showAd (){
+    if(_isAdReady){
+      _rewardedAd.show(
+          onUserEarnedReward: (ad , rewaredItem){
+            log("rewarded item type = ${rewaredItem.type}");
+            log("rewarded item amount = ${rewaredItem.amount}");
+
+            adShowed = true;
+          }
+      );
+    }
+
+    _rewardedAd.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad){
+          log("ad dismissed");
+          ad.dispose();
+
+        } ,
+        onAdFailedToShowFullScreenContent: (ad , error){
+          ad.dispose();
+        }
+    );
+
+
+
+  }
+
   @override
   Widget build(BuildContext context) {
     void _viewFile2() async {
+      // final today = DateTime.now();
+      // final fiftyDaysFromNow = today.difference( today.add(const Duration(hours: 24)));
+      //
+      // print('fuc press$fiftyDaysFromNow');
       final SharedPreferences prefs = await _prefs;
-      var secoundDate=DateTime.parse( prefs.getString('date'));
-      resultDate = DateTime.now().difference(secoundDate).inSeconds.toInt();
+      //var TheredDate=DateTime.parse( prefs.getString('date')??(fiftyDaysFromNow).toString());
+
+     //var secoundDate=DateTime.parse( prefs.getString('date').toString()??DateTime.now());
+      if(prefs.getString('date')==null){
+
+      await  prefs.setString('date', DateTime.now().add( Duration(hours: -24)).toIso8601String());
+      print('${prefs.get('date')} الوقت السالب ');
+
+      }
+      print(prefs.get('date'));
+
+      DateTime date2=DateTime.parse( prefs.getString('date'));
+      resultDate = DateTime.now().difference(date2).inHours.toInt();
 
       print('      هدااااااااا الوقت بالدقائق  $resultDate');
 
@@ -76,29 +152,70 @@ class _PdfItemState extends State<PdfItem> {
         } else {
           print('Something went wrong');
         }
-        if(resultDate>30)
+
+        if(resultDate>=23)
+
           setState(() {
             counter=counter+1;
           });
-        print(' $counter هداااااااااااااااا الكونتر ');
+
+          print(' $counter هداااااااااااااااا الكونتر ');
 
       }
       else {
+        return
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: myText('تم إستهلاك الحد الأقصى من التنزيلات لهذا اليوم', 22, FontWeight.bold),
+              content: myText('يمكنك مشاهدة الإعلان لمواصلة التحميل مجانة بلا حدود لمدة يوم كامل'
+              , 20, FontWeight.normal),
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) =>  NextScreen()),
-        ).then((value)async {
-          await  prefs.setString('date', DateTime.now().toIso8601String());
-          print('تم التخزيييييييييييييييييييين');
-          var now=DateTime.parse( prefs.getString('date'));
-          String formattedTime = DateFormat.Hm().format(now);
-          counter=0;
-          resultDate=0;
-          print(now);
+              actions: <Widget>[
+
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('إغلاق'),
+                ),
 
 
-        });
+                TextButton(
+                  onPressed: () async{
+
+                   await showAd();
+                    await  prefs.setString('date', DateTime.now().toIso8601String());
+                    print('تم التخزيييييييييييييييييييين');
+                    var now=DateTime.parse( prefs.getString('date'));
+                    String formattedTime = DateFormat.Hm().format(now);
+                    counter=0;
+                    resultDate=0;
+                    print(now);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'مشاهدة الإعلان',
+                    style: TextStyle(
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context) =>  NextScreen()),
+        // ).then((value)async {
+
+        //
+        //
+        // });
       }
 
     }
@@ -222,7 +339,7 @@ class _PdfItemState extends State<PdfItem> {
                                     ),
 
                                     TextButton(
-                                      onPressed:()=> _viewFile2,
+                                      onPressed:() =>_viewFile2(),
                                       child:  Text(
                                         "تنزيل",
                                         style:  GoogleFonts.cairo(
@@ -244,7 +361,7 @@ class _PdfItemState extends State<PdfItem> {
                       myPdfRowItem(
                         "مشاركة",
                         Icon(Icons.share , color: Colors.white,),
-                        
+
                         ()async{
                           var readLines = ['${widget.pdf.name}', ' ${widget.pdf.appLink}'];
                           String getNewLineString() {
@@ -256,7 +373,7 @@ class _PdfItemState extends State<PdfItem> {
                           }
                           if(widget.pdf.name.isNotEmpty){
                             await Share.share(getNewLineString());
-                            
+
                           }
                         },
                       ),
