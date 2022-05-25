@@ -48,4 +48,5 @@ class SharedPrefHelper {
   int getProductQuantity(int id) {
     return prefs.getInt('$id\_quantity') ?? 0;
   }
+
 }

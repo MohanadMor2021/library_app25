@@ -6,6 +6,7 @@ import 'package:library_app/components/constant.dart';
 import 'package:library_app/components/global_componnets.dart';
 import 'package:library_app/components/my_drawer.dart';
 
+import '../shared/local/cache_helper.dart';
 import 'home_screen/cubit/home_cubit.dart';
 
 
@@ -128,7 +129,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                               CupertinoSwitch(
                                 value: _switchValue,
-                                onChanged: (value) {
+                                onChanged: (value)async {
+
                                   setState(() {
                                     _switchValue = value;
                                   });

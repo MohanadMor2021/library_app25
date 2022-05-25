@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/screenutil_init.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:library_app/ads/cubit/ads_cubit.dart';
 import 'package:library_app/shared/bloc_observer.dart';
+import 'package:library_app/shared/local/cache_helper.dart';
 import 'package:library_app/shared/remote/dio_helper.dart';
 import 'package:library_app/shared/shared_pref_helper.dart';
 import 'package:library_app/styles/themes.dart';
@@ -23,6 +24,7 @@ void main() {
 //  MyApp(),
   DioHelper.dioInit();
 
+
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
   MobileAds.instance.initialize();
@@ -34,7 +36,9 @@ void main() {
   // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   BlocOverrides.runZoned(
-        () {
+        () async{
+          await CacheHelper.init();
+          bool isDark = CacheHelper.getBoolean(key: 'isDark');
 
       runApp( MyApp());
     },
@@ -56,6 +60,9 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
+    //    CacheHelper.init();
+    //
+
     // TODO: implement initState
     super.initState();
 
